@@ -45,8 +45,37 @@
             uniform float _XShad;
             uniform float _YShad;
 
+			uniform float _ellipseHorizontalRadii;
+			uniform float _ellipseVerticalRadii;
+			uniform float _ellipseShadingOffset;
+			uniform float2 _ellipsePosition;
+
+			float ellipseTest(v2f i) 
+			{
+				float xPos = i.uv.x - _ellipsePosition.x;
+				float yPos = i.uv.y - _ellipsePosition.y;
+
+				xPos = xPos / _ellipseHorizontalRadii;
+				yPos = yPos / _ellipseVerticalRadii;
+				float ellipseTest = xPos*xPos + yPos*yPos;
+
+				if (ellipseTest < 1)
+				{
+					//Nothing shall be changed - return 1 as multiplier for the color.
+					return 1.0f;
+				}
+				else 
+				{
+					//Apply smooth change of shading where necessary. For further points -
+					//return pure 0 to make the area black.
+					return 1 - min((ellipseTest - 1) / _ellipseShadingOffset, 1);
+				}
+			}
+
             fixed4 frag(v2f i) : SV_Target
             {
+				float ellipseValue = ellipseTest(i);
+
                 float rdk = _ParamA;
                 float start = _Start - 0.5;
                 float end = _End - 0.5;
@@ -77,7 +106,11 @@
                 else if (i.uv.y < _YShad) {
                     Y = (_YShad - i.uv.y)/_YShad;
                 }
+
                 float vin = 1- max(X,Y);
+
+				vin = min(vin, ellipseValue);
+
                 col *= vin;
                 return col; 
             }
